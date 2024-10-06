@@ -1,4 +1,3 @@
-import React from "react";
 import { Service } from "../apwrite/config";
 import { Link } from "react-router-dom";
 interface Card {

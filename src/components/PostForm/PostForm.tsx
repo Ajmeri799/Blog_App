@@ -1,33 +1,29 @@
-import React, { useCallback, useEffect } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { Button, Input, RTE, Select } from "../index";
+import React, { useCallback } from "react";
+import { useForm } from "react-hook-form";
+import { Button, Input, RTE, Select } from "..";
 import appwriteService from "../../apwrite/config";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { stringify } from "querystring";
-
-interface Post {
+interface POST {
   $id: string;
   title: string;
   content: string;
   status: string;
-  featuredImage: string;
+  featuredImage?: any;
 }
-
 interface PostFormProps {
-  post?: Post;
+  post?: POST;
 }
-
 interface FormData {
   title: string;
   slug: string;
   content: string;
   status: string;
-  image: FileList;
+  image?: FileList;
   featuredImage?: string;
 }
 
-function PostForm({ post }: PostFormProps) {
+const PostForm: React.FC<PostFormProps> = ({ post }) => {
   const { register, handleSubmit, watch, setValue, control, getValues } =
     useForm<FormData>({
       defaultValues: {
@@ -41,19 +37,19 @@ function PostForm({ post }: PostFormProps) {
   const navigate = useNavigate();
   const userData = useSelector((state: any) => state.auth.userData);
 
-  const submit: SubmitHandler<FormData> = async (data) => {
+  const submit = async (data: any) => {
     if (post) {
       const file = data.image[0]
         ? await appwriteService.uploadFile(data.image[0])
         : null;
 
-      if (file && post.featuredImage) {
-        await appwriteService.deleteFile(post.featuredImage);
+      if (file) {
+        appwriteService.deleteFile(post.featuredImage);
       }
 
       const dbPost = await appwriteService.updatePost(post.$id, {
         ...data,
-        featuredImage: file ? file.$id : post.featuredImage,
+        featuredImage: file ? file.$id : undefined,
       });
 
       if (dbPost) {
@@ -63,10 +59,11 @@ function PostForm({ post }: PostFormProps) {
       const file = await appwriteService.uploadFile(data.image[0]);
 
       if (file) {
+        const fileId = file.$id;
+        data.featuredImage = fileId;
         const dbPost = await appwriteService.createPost({
           ...data,
           userId: userData.$id,
-          featuredImage: file.$id,
         });
 
         if (dbPost) {
@@ -76,17 +73,18 @@ function PostForm({ post }: PostFormProps) {
     }
   };
 
-  const slugTransform = useCallback((value: string) => {
-    return value
-      ? value
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-zA-Z\d\s]+/g, "-")
-          .replace(/\s+/g, "-")
-      : "";
+  const slugTransform = useCallback((value: any) => {
+    if (value && typeof value === "string")
+      return value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z\d\s]+/g, "-")
+        .replace(/\s/g, "-");
+
+    return "";
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (name === "title") {
         setValue("slug", slugTransform(value.title), { shouldValidate: true });
@@ -95,6 +93,7 @@ function PostForm({ post }: PostFormProps) {
 
     return () => subscription.unsubscribe();
   }, [watch, slugTransform, setValue]);
+
   return (
     <form onSubmit={handleSubmit(submit)} className="flex flex-wrap">
       <div className="w-2/3 px-2">
@@ -130,11 +129,16 @@ function PostForm({ post }: PostFormProps) {
           accept="image/png, image/jpg, image/jpeg, image/gif"
           {...register("image", { required: !post })}
         />
-        {post && (
+
+        {post && post.featuredImage && (
           <div className="w-full mb-4">
             <img
-              src={appwriteService.getFilePreview(post.featuredImage)}
-              alt={post.title}
+              src={
+                post.featuredImage.appwriteService?.getFilePreview(
+                  post.featuredImage
+                ) || ""
+              }
+              alt={post.title || "Post Image"}
               className="rounded-lg"
             />
           </div>
@@ -145,11 +149,15 @@ function PostForm({ post }: PostFormProps) {
           className="mb-4"
           {...register("status", { required: true })}
         />
-        <Button type="submit" className="w-full">
+        <Button
+          type="submit"
+          color={post ? "bg-green-500" : undefined}
+          className="w-full"
+        >
           {post ? "Update" : "Submit"}
         </Button>
       </div>
     </form>
   );
-}
+};
 export default PostForm;

@@ -19,7 +19,8 @@ interface UpdatePost {
 export class Service {
   client = new Client();
   databases;
-  bucket;
+  bucket: Storage;
+  static bucket: any;
   constructor() {
     this.client
       .setEndpoint(conf.appwriteUrl)
@@ -102,14 +103,15 @@ export class Service {
     try {
       return await this.databases.listDocuments(
         conf.appwriteDatabaseID,
-        conf.appwriteProjectID,
+        conf.appwriteCollectionID,
         queries
       );
     } catch (error) {
-      console.log("Appwrite serivce :: getPost:: error", error);
+      console.log("Appwrite serive :: getPosts :: error", error);
       return false;
     }
   }
+
   // file upload service
   async uploadFile(file: any) {
     try {
@@ -134,6 +136,9 @@ export class Service {
   }
   getFilePreview(fileId: string) {
     return this.bucket.getFilePreview(conf.appwriteBucketID, fileId);
+  }
+  static getFilePreview(featuredImage: string): string | undefined {
+    return this.bucket.getFilePreview(conf.appwriteBucketID, featuredImage);
   }
 }
 

@@ -1,6 +1,18 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-const initialState = {
+// Define the types for the initial state and the user data
+interface UserData {
+  name: string;
+  email: string;
+}
+
+interface AuthState {
+  status: boolean;
+  userData: UserData | null;
+}
+
+// Initialize the state with proper types
+const initialState: AuthState = {
   status: false,
   userData: null,
 };
@@ -9,9 +21,9 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    login: (state, action) => {
+    login: (state, action: PayloadAction<UserData>) => {
       state.status = true;
-      state.userData = action.payload.userData;
+      state.userData = action.payload;
     },
     logout: (state) => {
       state.status = false;
@@ -19,5 +31,7 @@ const authSlice = createSlice({
     },
   },
 });
+
 export const { login, logout } = authSlice.actions;
+
 export default authSlice.reducer;
